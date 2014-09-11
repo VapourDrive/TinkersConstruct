@@ -1,18 +1,15 @@
 package tconstruct.items.tools;
 
+import cpw.mods.fml.relauncher.*;
 import java.util.List;
-
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
+import net.minecraft.item.*;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.StatCollector;
 import net.minecraft.world.World;
-import tconstruct.common.TRepo;
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
+import tconstruct.tools.TinkerTools;
 
 public class Shortbow extends BowBase
 {
@@ -55,23 +52,23 @@ public class Shortbow extends BowBase
     @Override
     public Item getHeadItem ()
     {
-        return TRepo.toolRod;
+        return TinkerTools.toolRod;
     }
 
     @Override
     public Item getHandleItem ()
     {
-        return TRepo.bowstring;
+        return TinkerTools.bowstring;
     }
 
     @Override
     public Item getAccessoryItem ()
     {
-        return TRepo.toolRod;
+        return TinkerTools.toolRod;
     }
 
     @Override
-    public String[] toolCategories ()
+    public String[] getTraits ()
     {
         return new String[] { "weapon", "ranged", "bow" };
     }

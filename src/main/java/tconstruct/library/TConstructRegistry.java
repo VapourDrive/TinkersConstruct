@@ -1,28 +1,12 @@
 package tconstruct.library;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-
-import mantle.lib.TabTools;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import tconstruct.library.crafting.Detailing;
-import tconstruct.library.crafting.LiquidCasting;
-import tconstruct.library.crafting.ToolBuilder;
-import tconstruct.library.tools.ArrowMaterial;
-import tconstruct.library.tools.BowMaterial;
-import tconstruct.library.tools.BowstringMaterial;
-import tconstruct.library.tools.CustomMaterial;
-import tconstruct.library.tools.FletchingMaterial;
-import tconstruct.library.tools.TToolMaterial;
-import tconstruct.library.tools.ToolCore;
+import java.util.*;
+import net.minecraft.item.*;
+import org.apache.logging.log4j.*;
+import tconstruct.library.crafting.*;
+import tconstruct.library.modifier.ActiveArmorMod;
+import tconstruct.library.tools.*;
 
 /**
  * A registry to store any relevant API work
@@ -37,10 +21,11 @@ public class TConstructRegistry
     public static Logger logger = LogManager.getLogger("TCon-API");
 
     /* Creative tabs */
-    public static TabTools toolTab;
-    public static TabTools partTab;
-    public static TabTools materialTab;
-    public static TabTools blockTab;
+    public static TConstructCreativeTab toolTab;
+    public static TConstructCreativeTab partTab;
+    public static TConstructCreativeTab materialTab;
+    public static TConstructCreativeTab blockTab;
+    public static TConstructCreativeTab equipableTab;
 
     /* Items */
 
@@ -215,7 +200,7 @@ public class TConstructRegistry
      * multiple times the parts are added to the recipe's input list Valid part
      * amounts are 2, 3, and 4.
      * 
-     * @see ToolBuidler
+     * @see ToolBuilder
      * @param output
      *            The ToolCore to craft
      * @param parts
@@ -231,16 +216,14 @@ public class TConstructRegistry
     }
 
     // Materials
-    public static HashMap<Integer, TToolMaterial> toolMaterials = new HashMap<Integer, TToolMaterial>(40);
-    public static HashMap<String, TToolMaterial> toolMaterialStrings = new HashMap<String, TToolMaterial>(40);
+    public static HashMap<Integer, ToolMaterial> toolMaterials = new HashMap<Integer, ToolMaterial>(40);
+    public static HashMap<String, ToolMaterial> toolMaterialStrings = new HashMap<String, ToolMaterial>(40);
 
     /**
      * Adds a tool material to the registry
      * 
      * @param materialID
      *            Unique ID, stored for each part
-     * @exception materialID
-     *                must be unique
      * @param materialName
      *            Unique name for data lookup purposes
      * @param harvestLevel
@@ -262,13 +245,12 @@ public class TConstructRegistry
      *            Spiny.
      */
 
-    public static void addToolMaterial (int materialID, String materialName, int harvestLevel, int durability, int miningspeed, int attack, float handleModifier, int reinforced, float stonebound,
-            String style, String ability)
+    public static void addToolMaterial (int materialID, String materialName, int harvestLevel, int durability, int miningspeed, int attack, float handleModifier, int reinforced, float stonebound, String style, int primaryColor)
     {
-        TToolMaterial mat = toolMaterials.get(materialID);
+        ToolMaterial mat = toolMaterials.get(materialID);
         if (mat == null)
         {
-            mat = new TToolMaterial(materialName, harvestLevel, durability, miningspeed, attack, handleModifier, reinforced, stonebound, style, ability);
+            mat = new ToolMaterial(materialName, harvestLevel, durability, miningspeed, attack, handleModifier, reinforced, stonebound, style, primaryColor);
             toolMaterials.put(materialID, mat);
             toolMaterialStrings.put(materialName, mat);
         }
@@ -278,15 +260,13 @@ public class TConstructRegistry
 
     /**
      * Adds a tool material to the registry
-     * 
+     *
      * @param materialID
      *            Unique ID, stored for each part
-     * @exception materialID
-     *                must be unique
      * @param materialName
      *            Unique name for data lookup purposes
-     * @param displayName
-     *            Prefix for creative mode tools
+     * @param localizationName
+     *            The string used to localize the material name
      * @param harvestLevel
      *            The materials which the tool can harvest. Pickaxe levels - 0:
      *            Wood, 1: Stone, 2: Redstone/Diamond, 3: Obsidian, 4:
@@ -305,14 +285,12 @@ public class TConstructRegistry
      *            Amount of Stonebound to put on the tool. Negative numbers are
      *            Spiny.
      */
-
-    public static void addToolMaterial (int materialID, String materialName, String displayName, int harvestLevel, int durability, int miningspeed, int attack, float handleModifier, int reinforced,
-            float stonebound, String style, String ability)
+    public static void addToolMaterial (int materialID, String materialName, String localizationName, int harvestLevel, int durability, int miningspeed, int attack, float handleModifier, int reinforced, float stonebound, String style, int primaryColor)
     {
-        TToolMaterial mat = toolMaterials.get(materialID);
+        ToolMaterial mat = toolMaterials.get(materialID);
         if (mat == null)
         {
-            mat = new TToolMaterial(materialName, displayName, harvestLevel, durability, miningspeed, attack, handleModifier, reinforced, stonebound, style, ability);
+            mat = new ToolMaterial(materialName, localizationName, harvestLevel, durability, miningspeed, attack, handleModifier, reinforced, stonebound, style, primaryColor);
             toolMaterials.put(materialID, mat);
             toolMaterialStrings.put(materialName, mat);
         }
@@ -320,25 +298,44 @@ public class TConstructRegistry
             throw new IllegalArgumentException("[TCon API] Material ID " + materialID + " is already occupied by " + mat.materialName);
     }
 
+    @Deprecated
+    public static void addToolMaterial (int materialID, String materialName, int harvestLevel, int durability, int miningspeed, int attack, float handleModifier, int reinforced, float stonebound, String style)
+    {
+        logger.warn("[TCon API] Using deprecated addToolMaterial with no primary color. A fallback of white will be used.");
+        addToolMaterial(materialID, materialName, harvestLevel, durability, miningspeed, attack, handleModifier, reinforced, stonebound, style, 0xFFFFFF);
+    }
+
+    @Deprecated
+    public static void addToolMaterial (int materialID, String materialName, int harvestLevel, int durability, int miningspeed, int attack, float handleModifier, int reinforced, float stonebound, String style, String ability)
+    {
+        logger.warn("[TCon API] Using deprecated addToolMaterial with ability name. ability will be ignored, use languages files for that.");
+        addToolMaterial(materialID, materialName, harvestLevel, durability, miningspeed, attack, handleModifier, reinforced, stonebound, style);
+    }
+
+    @Deprecated
+    public static void addToolMaterial (int materialID, String materialName, String displayName, int harvestLevel, int durability, int miningspeed, int attack, float handleModifier, int reinforced, float stonebound, String style, String ability)
+    {
+        logger.warn("[TCon API] Using deprecated addToolMaterial with display and ability name. displayName and ability will be ignored, use languages files for that.");
+        addToolMaterial(materialID, materialName, harvestLevel, durability, miningspeed, attack, handleModifier, reinforced, stonebound, style);
+    }
+
     /**
      * Adds a tool material to the registry
      * 
      * @param materialID
      *            Unique ID, stored for each part
-     * @exception materialID
-     *                must be unique
      * @param material
      *            Complete tool material to add. Uses the name in the material
      *            for lookup purposes.
      */
 
-    public static void addtoolMaterial (int materialID, TToolMaterial material)
+    public static void addtoolMaterial (int materialID, ToolMaterial material)
     {
-        TToolMaterial mat = toolMaterials.get(materialID);
+        ToolMaterial mat = toolMaterials.get(materialID);
         if (mat == null)
         {
-            toolMaterials.put(materialID, mat);
-            toolMaterialStrings.put(material.name(), mat);
+            toolMaterials.put(materialID, material);
+            toolMaterialStrings.put(material.name(), material);
         }
         else
             throw new IllegalArgumentException("[TCon API] Material ID " + materialID + " is already occupied by " + mat.materialName);
@@ -352,7 +349,7 @@ public class TConstructRegistry
      * @return Tool Material
      */
 
-    public static TToolMaterial getMaterial (int key)
+    public static ToolMaterial getMaterial (int key)
     {
         return (toolMaterials.get(key));
     }
@@ -365,7 +362,7 @@ public class TConstructRegistry
      * @return Tool Material
      */
 
-    public static TToolMaterial getMaterial (String key)
+    public static ToolMaterial getMaterial (String key)
     {
         return (toolMaterialStrings.get(key));
     }
@@ -454,7 +451,7 @@ public class TConstructRegistry
     {
         for (CustomMaterial mat : customMaterials)
         {
-            if (mat.getClass().equals(clazz) && input.isItemEqual(mat.input))
+            if (mat.getClass().equals(clazz) && mat.matches(input))
                 return mat;
         }
         return null;
@@ -545,10 +542,16 @@ public class TConstructRegistry
     }
 
     public static ArrayList<ActiveToolMod> activeModifiers = new ArrayList<ActiveToolMod>();
+    public static LinkedList<ActiveArmorMod> activeArmorModifiers = new LinkedList<ActiveArmorMod>();
 
     public static void registerActiveToolMod (ActiveToolMod mod)
     {
         activeModifiers.add(mod);
+    }
+
+    public static void registerActiveArmorMod (ActiveArmorMod mod)
+    {
+        activeArmorModifiers.add(mod);
     }
 
     /**

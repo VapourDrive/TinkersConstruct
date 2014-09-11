@@ -1,26 +1,20 @@
 package tconstruct.blocks.slime;
 
-import java.util.List;
-import java.util.Random;
-
+import cpw.mods.fml.relauncher.*;
+import java.util.*;
 import mantle.blocks.MantleBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.renderer.texture.IIconRegister;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.init.Blocks;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
+import net.minecraft.item.*;
 import net.minecraft.util.IIcon;
-import net.minecraft.world.IBlockAccess;
-import net.minecraft.world.World;
-import net.minecraftforge.common.EnumPlantType;
-import net.minecraftforge.common.IPlantable;
+import net.minecraft.world.*;
+import net.minecraftforge.common.*;
 import net.minecraftforge.common.util.ForgeDirection;
-import tconstruct.common.TRepo;
 import tconstruct.library.TConstructRegistry;
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
+import tconstruct.tools.TinkerTools;
 
 public class SlimeGrass extends MantleBlock
 {
@@ -99,40 +93,40 @@ public class SlimeGrass extends MantleBlock
     @Override
     public void onPlantGrow (World world, int x, int y, int z, int sourceX, int sourceY, int sourceZ)
     {
-        world.setBlock(x, y, z, TRepo.craftedSoil, 5, 3);
+        world.setBlock(x, y, z, TinkerTools.craftedSoil, 5, 3);
     }
 
     @Override
-    public void updateTick (World par1World, int par2, int par3, int par4, Random par5Random)
+    public void updateTick (World world, int x, int y, int z, Random random)
     {
-        if (!par1World.isRemote)
+        if (!world.isRemote)
         {
-            if (par1World.getBlockLightValue(par2, par3 + 1, par4) < 4 && par1World.getBlockLightOpacity(par2, par3 + 1, par4) > 2)
+            if (world.getBlockLightValue(x, y + 1, z) < 4 && world.getBlockLightOpacity(x, y + 1, z) > 2)
             {
-                par1World.setBlock(par2, par3, par4, TRepo.craftedSoil, 5, 3);
+                world.setBlock(x, y, z, TinkerTools.craftedSoil, 5, 3);
             }
-            else if (par1World.getBlockLightValue(par2, par3 + 1, par4) >= 9)
+            else if (world.getBlockLightValue(x, y + 1, z) >= 9)
             {
                 for (int l = 0; l < 4; ++l)
                 {
-                    int posX = par2 + par5Random.nextInt(3) - 1;
-                    int posY = par3 + par5Random.nextInt(5) - 3;
-                    int posZ = par4 + par5Random.nextInt(3) - 1;
-                    Block l1 = par1World.getBlock(posX, posY + 1, posZ);
+                    int posX = x + random.nextInt(3) - 1;
+                    int posY = y + random.nextInt(5) - 3;
+                    int posZ = z + random.nextInt(3) - 1;
+                    Block blockAbove = world.getBlock(posX, posY + 1, posZ);
 
-                    if (par1World.getBlockLightValue(posX, posY + 1, posZ) >= 4 && par1World.getBlockLightOpacity(posX, posY + 1, posZ) <= 2)
+                    if (world.getBlockLightValue(posX, posY + 1, posZ) >= 4 && world.getBlockLightOpacity(posX, posY + 1, posZ) <= 2 && blockAbove != TinkerTools.craftedSoil && blockAbove != this)
                     {
-                        Block block = par1World.getBlock(posX, posY, posZ);
+                        Block block = world.getBlock(posX, posY, posZ);
                         if (block == Blocks.dirt)
                         {
-                            par1World.setBlock(posX, posY, posZ, (Block) this, 1, 3);
+                            world.setBlock(posX, posY, posZ, (Block) this, 1, 3);
                             return;
                         }
-                        int blockMeta = par1World.getBlockMetadata(posX, posY, posZ);
-                        if (block == TRepo.craftedSoil)
+                        int blockMeta = world.getBlockMetadata(posX, posY, posZ);
+                        if (block == TinkerTools.craftedSoil)
                         {
                             if (blockMeta == 5)
-                                par1World.setBlock(posX, posY, posZ, (Block) this, 0, 3);
+                                world.setBlock(posX, posY, posZ, (Block) this, 0, 3);
                         }
                     }
                 }
@@ -145,6 +139,6 @@ public class SlimeGrass extends MantleBlock
         if (metadata == 1)
             return Blocks.dirt;
         else
-            return TRepo.craftedSoil;
+            return TinkerTools.craftedSoil;
     }
 }

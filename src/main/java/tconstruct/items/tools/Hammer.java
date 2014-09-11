@@ -1,27 +1,23 @@
 package tconstruct.items.tools;
 
+import cpw.mods.fml.relauncher.*;
 import java.util.List;
-
 import mantle.world.WorldHelper;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
+import net.minecraft.item.*;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.IIcon;
-import net.minecraft.util.MovingObjectPosition;
+import net.minecraft.util.*;
 import net.minecraft.world.World;
-import tconstruct.common.TRepo;
-import tconstruct.library.ActiveToolMod;
-import tconstruct.library.TConstructRegistry;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.world.BlockEvent;
+import tconstruct.library.*;
 import tconstruct.library.crafting.ToolBuilder;
-import tconstruct.library.tools.AbilityHelper;
-import tconstruct.library.tools.HarvestTool;
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
+import tconstruct.library.tools.*;
+import tconstruct.tools.TinkerTools;
 
 public class Hammer extends HarvestTool
 {
@@ -73,25 +69,25 @@ public class Hammer extends HarvestTool
     @Override
     public Item getHeadItem ()
     {
-        return TRepo.hammerHead;
+        return TinkerTools.hammerHead;
     }
 
     @Override
     public Item getHandleItem ()
     {
-        return TRepo.toughRod;
+        return TinkerTools.toughRod;
     }
 
     @Override
     public Item getAccessoryItem ()
     {
-        return TRepo.largePlate;
+        return TinkerTools.largePlate;
     }
 
     @Override
     public Item getExtraItem ()
     {
-        return TRepo.largePlate;
+        return TinkerTools.largePlate;
     }
 
     @Override
@@ -213,8 +209,7 @@ public class Hammer extends HarvestTool
     {
         super.getSubItems(id, tab, list);
 
-        ItemStack tool = ToolBuilder.instance.buildTool(new ItemStack(getHeadItem(), 1, 10), new ItemStack(getHandleItem(), 1, 8), new ItemStack(getAccessoryItem(), 1, 11), new ItemStack(
-                getExtraItem(), 1, 11), "InfiMiner");
+        ItemStack tool = ToolBuilder.instance.buildTool(new ItemStack(getHeadItem(), 1, 10), new ItemStack(getHandleItem(), 1, 8), new ItemStack(getAccessoryItem(), 1, 11), new ItemStack(getExtraItem(), 1, 11), "InfiMiner");
 
         NBTTagCompound tags = tool.getTagCompound().getCompoundTag("InfiTool");
         tags.setInteger("Modifiers", 0);
@@ -258,7 +253,7 @@ public class Hammer extends HarvestTool
         if (block == Blocks.monster_egg)
             validStart = true;
 
-        MovingObjectPosition mop = AbilityHelper.raytraceFromEntity(world, player, true, 4.5D);
+        MovingObjectPosition mop = AbilityHelper.raytraceFromEntity(world, player, false, 4.5D);
         if (mop == null || !validStart)
             return super.onBlockStartBreak(stack, x, y, z, player);
 
@@ -296,8 +291,9 @@ public class Hammer extends HarvestTool
                         int hlvl = -1;
                         if (localBlock.getHarvestTool(localMeta) != null && localBlock.getHarvestTool(localMeta).equals(this.getHarvestType()))
                             hlvl = localBlock.getHarvestLevel(localMeta);
-                        float localHardness = localBlock == null ? Float.MAX_VALUE : localBlock.getBlockHardness(world, xPos, yPos, zPos);
+                        float localHardness = localBlock.getBlockHardness(world, xPos, yPos, zPos);
 
+                        //Choose blocks that aren't too much harder than the first block. Stone: 2.0, Ores: 3.0
                         if (hlvl <= toolLevel && localHardness - 1.5 <= blockHardness)
                         {
                             boolean cancelHarvest = false;
@@ -306,6 +302,12 @@ public class Hammer extends HarvestTool
                                 if (mod.beforeBlockBreak(this, stack, xPos, yPos, zPos, player))
                                     cancelHarvest = true;
                             }
+
+                            // send blockbreak event
+                            BlockEvent.BreakEvent event = new BlockEvent.BreakEvent(x, y, z, world, localBlock, localMeta, player);
+                            event.setCanceled(cancelHarvest);
+                            MinecraftForge.EVENT_BUS.post(event);
+                            cancelHarvest = event.isCanceled();
 
                             if (!cancelHarvest)
                             {
@@ -317,12 +319,8 @@ public class Hammer extends HarvestTool
                                         {
                                             if (!player.capabilities.isCreativeMode)
                                             {
-                                                if (localBlock.removedByPlayer(world, player, xPos, yPos, zPos))
-                                                {
-                                                    localBlock.onBlockDestroyedByPlayer(world, xPos, yPos, zPos, localMeta);
-                                                }
-                                                localBlock.harvestBlock(world, player, xPos, yPos, zPos, localMeta);
-                                                localBlock.onBlockHarvested(world, xPos, yPos, zPos, localMeta, player);
+                                                mineBlock(world, xPos, yPos, zPos, localMeta, player, localBlock);
+
                                                 if (blockHardness > 0f)
                                                     onBlockDestroyed(stack, world, localBlock, xPos, yPos, zPos, player);
                                                 world.func_147479_m(x, y, z);
@@ -347,77 +345,19 @@ public class Hammer extends HarvestTool
     }
 
     @Override
-    public float getDigSpeed (ItemStack stack, Block block, int meta)
+    public float breakSpeedModifier ()
     {
-        if (!stack.hasTagCompound())
-            return 1.0f;
-
-        NBTTagCompound tags = stack.getTagCompound().getCompoundTag("InfiTool");
-        if (tags.getBoolean("Broken"))
-            return 0.1f;
-
-        Material[] materials = getEffectiveMaterials();
-        for (int i = 0; i < materials.length; i++)
-        {
-            if (materials[i] == block.getMaterial())
-            {
-                return getblockSpeed(tags, block, meta);
-            }
-        }
-
-        /*
-         * if (block == Block.silverfish) return getblockSpeed(tags, block,
-         * meta);
-         */
-
-        return super.getDigSpeed(stack, block, meta);
+        return 0.4f;
     }
-
-    float getblockSpeed (NBTTagCompound tags, Block block, int meta)
-    {
-        float mineSpeed = tags.getInteger("MiningSpeed");
-        int heads = 1;
-        if (tags.hasKey("MiningSpeed2"))
-        {
-            mineSpeed += tags.getInteger("MiningSpeed2");
-            heads++;
-        }
-        if (tags.hasKey("MiningSpeedHandle"))
-        {
-            mineSpeed += tags.getInteger("MiningSpeedHandle");
-            heads++;
-        }
-
-        if (tags.hasKey("MiningSpeedExtra"))
-        {
-            mineSpeed += tags.getInteger("MiningSpeedExtra");
-            heads++;
-        }
-        float trueSpeed = mineSpeed / (heads * 300f);
-        int hlvl = block.getHarvestLevel(meta);
-        int durability = tags.getInteger("Damage");
-
-        float stonebound = tags.getFloat("Shoddy");
-        float bonusLog = (float) Math.log(durability / 216f + 1) * 2 * stonebound;
-        trueSpeed += bonusLog;
-
-        if (hlvl <= tags.getInteger("HarvestLevel"))
-            return trueSpeed;
-        return 0.1f;
-    }
-
-    /*
-     * @Override public void onUpdate (ItemStack stack, World world, Entity
-     * entity, int par4, boolean par5) { super.onUpdate(stack, world, entity,
-     * par4, par5); if (entity instanceof EntityPlayer) { EntityPlayer player =
-     * (EntityPlayer) entity; ItemStack equipped =
-     * player.getCurrentEquippedItem(); if (equipped == stack) {
-     * player.addPotionEffect(new PotionEffect(Potion.digSlowdown.id, 1, 1)); }
-     * } }
-     */
 
     @Override
-    public String[] toolCategories ()
+    public float stoneboundModifier ()
+    {
+        return 216f;
+    }
+
+    @Override
+    public String[] getTraits ()
     {
         return new String[] { "weapon", "harvest", "melee", "bludgeoning" };
     }

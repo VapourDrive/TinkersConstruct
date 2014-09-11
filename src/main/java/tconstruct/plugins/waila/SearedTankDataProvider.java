@@ -1,13 +1,10 @@
 package tconstruct.plugins.waila;
 
-import mcp.mobius.waila.api.IWailaConfigHandler;
-import mcp.mobius.waila.api.IWailaDataAccessor;
-import mcp.mobius.waila.api.IWailaDataProvider;
+import java.util.List;
+import mcp.mobius.waila.api.*;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.fluids.FluidStack;
-import tconstruct.blocks.logic.LavaTankLogic;
-
-import java.util.List;
+import tconstruct.smeltery.logic.LavaTankLogic;
 
 public class SearedTankDataProvider implements IWailaDataProvider
 {
@@ -38,7 +35,7 @@ public class SearedTankDataProvider implements IWailaDataProvider
             }
             else
             {
-                currenttip.add("§oEmpty"); // "§o" == Italics
+                currenttip.add(SpecialChars.ITALIC + "Empty");
             }
         }
         return currenttip;

@@ -1,18 +1,15 @@
 package tconstruct.client.entity.item;
 
+import cpw.mods.fml.relauncher.*;
 import net.minecraft.client.renderer.RenderBlocks;
 import net.minecraft.client.renderer.entity.Render;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.entity.Entity;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.ResourceLocation;
-
 import org.lwjgl.opengl.GL11;
-
-import tconstruct.common.TRepo;
-import tconstruct.entity.item.ExplosivePrimed;
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
+import tconstruct.mechworks.entity.item.ExplosivePrimed;
+import tconstruct.world.TinkerWorld;
 
 @SideOnly(Side.CLIENT)
 public class ExplosiveRender extends Render
@@ -52,7 +49,7 @@ public class ExplosiveRender extends Render
 
         f2 = (1.0F - ((float) par1EntityTNTPrimed.fuse - par9 + 1.0F) / 100.0F) * 0.8F;
         this.bindEntityTexture(par1EntityTNTPrimed);
-        this.blockRenderer.renderBlockAsItem(TRepo.slimeExplosive, 0, par1EntityTNTPrimed.getBrightness(par9));
+        this.blockRenderer.renderBlockAsItem(TinkerWorld.slimeExplosive, 0, par1EntityTNTPrimed.getBrightness(par9));
 
         if (par1EntityTNTPrimed.fuse / 5 % 2 == 0)
         {

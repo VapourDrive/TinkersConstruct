@@ -1,11 +1,10 @@
 package tconstruct.items.tools;
 
+import cpw.mods.fml.relauncher.*;
 import net.minecraft.block.material.Material;
 import net.minecraft.item.Item;
-import tconstruct.common.TRepo;
 import tconstruct.library.tools.HarvestTool;
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
+import tconstruct.tools.TinkerTools;
 
 public class Shovel extends HarvestTool
 {
@@ -32,7 +31,7 @@ public class Shovel extends HarvestTool
     @Override
     public Item getHeadItem ()
     {
-        return TRepo.shovelHead;
+        return TinkerTools.shovelHead;
     }
 
     @Override

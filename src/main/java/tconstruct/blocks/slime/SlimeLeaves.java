@@ -1,20 +1,16 @@
 package tconstruct.blocks.slime;
 
-import java.util.List;
-import java.util.Random;
-
+import cpw.mods.fml.relauncher.*;
+import java.util.*;
 import net.minecraft.block.BlockLeaves;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.IIconRegister;
 import net.minecraft.creativetab.CreativeTabs;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
+import net.minecraft.item.*;
 import net.minecraft.util.IIcon;
-import net.minecraft.world.IBlockAccess;
-import net.minecraft.world.World;
-import tconstruct.common.TRepo;
+import net.minecraft.world.*;
 import tconstruct.library.TConstructRegistry;
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
+import tconstruct.world.TinkerWorld;
 
 public class SlimeLeaves extends BlockLeaves
 {
@@ -73,7 +69,7 @@ public class SlimeLeaves extends BlockLeaves
     public IIcon getIcon (int side, int meta)
     {
         int tex = meta % 4;
-
+        this.setGraphicsLevel(Minecraft.getMinecraft().gameSettings.fancyGraphics);
         if (this.field_150121_P)
             return fancyIcons[tex];
         else
@@ -103,7 +99,7 @@ public class SlimeLeaves extends BlockLeaves
     @Override
     public Item getItemDropped (int p_149650_1_, Random p_149650_2_, int p_149650_3_)
     {
-        return Item.getItemFromBlock(TRepo.slimeSapling);
+        return Item.getItemFromBlock(TinkerWorld.slimeSapling);
     }
 
     /**
@@ -151,7 +147,7 @@ public class SlimeLeaves extends BlockLeaves
 
             if ((meta & 3) == 0 && world.rand.nextInt(dropChance) == 0)
             {
-                this.dropBlockAsItem(world, x, y, z, new ItemStack(TRepo.strangeFood, 1, 0));
+                this.dropBlockAsItem(world, x, y, z, new ItemStack(TinkerWorld.strangeFood, 1, 0));
             }
         }
     }

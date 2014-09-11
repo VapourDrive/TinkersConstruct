@@ -1,18 +1,16 @@
 package tconstruct.blocks.logic;
 
+import cpw.mods.fml.relauncher.*;
 import mantle.blocks.abstracts.InventoryLogic;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.inventory.Container;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.network.NetworkManager;
-import net.minecraft.network.Packet;
+import net.minecraft.network.*;
 import net.minecraft.network.play.server.S35PacketUpdateTileEntity;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.world.World;
 import tconstruct.library.crafting.DryingRackRecipes;
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
 
 public class DryingRackLogic extends InventoryLogic
 {
@@ -122,7 +120,7 @@ public class DryingRackLogic extends InventoryLogic
     @SideOnly(Side.CLIENT)
     public AxisAlignedBB getRenderBoundingBox ()
     {
-        AxisAlignedBB cbb = AxisAlignedBB.getAABBPool().getAABB(xCoord, yCoord - 1, zCoord, xCoord + 1, yCoord + 1, zCoord + 1);
+        AxisAlignedBB cbb = AxisAlignedBB.getBoundingBox(xCoord, yCoord - 1, zCoord, xCoord + 1, yCoord + 1, zCoord + 1);
         return cbb;
     }
 

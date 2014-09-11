@@ -1,66 +1,50 @@
 package tconstruct.library.tools;
 
-import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-
+import cofh.api.energy.IEnergyContainerItem;
+import cpw.mods.fml.common.Optional;
+import cpw.mods.fml.relauncher.*;
+import java.util.*;
 import net.minecraft.block.Block;
 import net.minecraft.client.renderer.texture.IIconRegister;
 import net.minecraft.creativetab.CreativeTabs;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.*;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemBlock;
-import net.minecraft.item.ItemPotion;
-import net.minecraft.item.ItemStack;
+import net.minecraft.item.*;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.IIcon;
-import net.minecraft.util.StatCollector;
+import net.minecraft.util.*;
 import net.minecraft.world.World;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import tconstruct.entity.FancyEntityItem;
-import tconstruct.library.ActiveToolMod;
-import tconstruct.library.TConstructRegistry;
+import tconstruct.library.*;
 import tconstruct.library.crafting.ToolBuilder;
-import cofh.api.energy.IEnergyContainerItem;
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
+import tconstruct.library.modifier.*;
+import tconstruct.tools.entity.FancyEntityItem;
 
 /**
  * NBTTags Main tag - InfiTool
  * 
  * @see ToolBuilder
  * 
- *      Required: Head: Base and render tag, above the handle Handle: Base and
- *      render tag, bottom layer
+ * Required: Head: Base and render tag, above the handle Handle: Base and
+ * render tag, bottom layer
  * 
- *      Damage: Replacement for metadata MaxDamage: ItemStacks only read
- *      setMaxDamage() Broken: Represents whether the tool is broken (boolean)
- *      Attack: How much damage a mob will take MiningSpeed: The speed at which
- *      a tool mines
+ * Damage: Replacement for metadata MaxDamage: ItemStacks only read
+ * setMaxDamage() Broken: Represents whether the tool is broken (boolean)
+ * Attack: How much damage a mob will take MiningSpeed: The speed at which
+ * a tool mines
  * 
- *      Others: Accessory: Base and tag, above head. Sword guards, binding, etc
- *      Effects: Render tag, top layer. Fancy effects like moss or diamond edge.
- *      Render order: Handle > Head > Accessory > Effect1 > Effect2 > Effect3 >
- *      etc Unbreaking: Reinforced in-game, 10% chance to not use durability per
- *      level Stonebound: Mines faster as the tool takes damage, but has less
- *      attack Spiny: Opposite of stonebound
+ * Others: Accessory: Base and tag, above head. Sword guards, binding, etc
+ * Effects: Render tag, top layer. Fancy effects like moss or diamond edge.
+ * Render order: Handle > Head > Accessory > Effect1 > Effect2 > Effect3 >
+ * etc Unbreaking: Reinforced in-game, 10% chance to not use durability per
+ * level Stonebound: Mines faster as the tool takes damage, but has less
+ * attack Spiny: Opposite of stonebound
  * 
- *      Modifiers have their own tags.
- * @see ToolMod
+ * Modifiers have their own tags.
+ * @see ItemModifier
  */
 
-public abstract class ToolCore extends Item implements IEnergyContainerItem
+@Optional.Interface(modid = "CoFHLib", iface = "cofh.api.energy.IEnergyContainerItem")
+public abstract class ToolCore extends Item implements IEnergyContainerItem, IModifyable
 {
-    // TE power constants -- TODO grab these from the items added
-    protected int capacity = 400000;
-    protected int maxReceive = 80;
-    protected int maxExtract = 80;
-
     protected Random random = new Random();
     protected int damageVsEntity;
     public static IIcon blankSprite;
@@ -77,6 +61,18 @@ public abstract class ToolCore extends Item implements IEnergyContainerItem
         TConstructRegistry.addToolMapping(this);
         setNoRepair();
         canRepair = false;
+    }
+
+    @Override
+    public String getBaseTagName ()
+    {
+        return "InfiTool";
+    }
+
+    @Override
+    public String getModifyType ()
+    {
+        return "Tool";
     }
 
     /**
@@ -109,6 +105,11 @@ public abstract class ToolCore extends Item implements IEnergyContainerItem
     public String getToolName ()
     {
         return this.getClass().getSimpleName();
+    }
+
+    public String getLocalizedToolName ()
+    {
+        return StatCollector.translateToLocal("tool." + getToolName().toLowerCase());
     }
 
     /* Rendering */
@@ -421,6 +422,9 @@ public abstract class ToolCore extends Item implements IEnergyContainerItem
         return TConstructRegistry.getMaterial(type).style();
     }
 
+    /**
+     * Returns the localized name of the materials ability. Only use this for display purposes, not for logic.
+     */
     public String getAbilityNameForType (int type)
     {
         return TConstructRegistry.getMaterial(type).ability();
@@ -428,10 +432,10 @@ public abstract class ToolCore extends Item implements IEnergyContainerItem
 
     public String getReinforcedName (int head, int handle, int accessory, int extra, int unbreaking)
     {
-        TToolMaterial headMat = TConstructRegistry.getMaterial(head);
-        TToolMaterial handleMat = TConstructRegistry.getMaterial(handle);
-        TToolMaterial accessoryMat = TConstructRegistry.getMaterial(accessory);
-        TToolMaterial extraMat = TConstructRegistry.getMaterial(extra);
+        tconstruct.library.tools.ToolMaterial headMat = TConstructRegistry.getMaterial(head);
+        tconstruct.library.tools.ToolMaterial handleMat = TConstructRegistry.getMaterial(handle);
+        tconstruct.library.tools.ToolMaterial accessoryMat = TConstructRegistry.getMaterial(accessory);
+        tconstruct.library.tools.ToolMaterial extraMat = TConstructRegistry.getMaterial(extra);
 
         int reinforced = 0;
         String style = "";
@@ -531,8 +535,8 @@ public abstract class ToolCore extends Item implements IEnergyContainerItem
         while (iter.hasNext())
         {
             Map.Entry pairs = (Map.Entry) iter.next();
-            TToolMaterial material = (TToolMaterial) pairs.getValue();
-            buildTool((Integer) pairs.getKey(), material.displayName, list);
+            tconstruct.library.tools.ToolMaterial material = (tconstruct.library.tools.ToolMaterial) pairs.getValue();
+            buildTool((Integer) pairs.getKey(), material.prefixName(), list);
         }
     }
 
@@ -542,30 +546,9 @@ public abstract class ToolCore extends Item implements IEnergyContainerItem
         ItemStack accessoryStack = accessory != null ? new ItemStack(getAccessoryItem(), 1, id) : null;
         Item extra = getExtraItem();
         ItemStack extraStack = extra != null ? new ItemStack(extra, 1, id) : null;
-        ItemStack tool = ToolBuilder.instance.buildTool(new ItemStack(getHeadItem(), 1, id), new ItemStack(getHandleItem(), 1, id), accessoryStack, extraStack, name + getToolName());
-        if (tool == null)
-        {
-            Class clazz;
-            Field fld;
-            boolean supress = false;
-            try
-            {
-                clazz = Class.forName("tconstruct.common.TRepo");
-                fld = clazz.getField("supressMissingToolLogs");
-                supress = fld.getBoolean(fld);
-            }
-            catch (Exception e)
-            {
-                TConstructRegistry.logger.error("TConstruct Library could not find parts of TContent");
-                e.printStackTrace();
-            }
-            if (!supress)
-            {
-                TConstructRegistry.logger.error("Creative builder failed tool for " + name + this.getToolName());
-                TConstructRegistry.logger.error("Make sure you do not have item ID conflicts");
-            }
-        }
-        else
+        String completeName = String.format("%s %s", name, getLocalizedToolName());
+        ItemStack tool = ToolBuilder.instance.buildTool(new ItemStack(getHeadItem(), 1, id), new ItemStack(getHandleItem(), 1, id), accessoryStack, extraStack, completeName);
+        if (tool != null)
         {
             tool.getTagCompound().getCompoundTag("InfiTool").setBoolean("Built", true);
             list.add(tool);
@@ -600,7 +583,7 @@ public abstract class ToolCore extends Item implements IEnergyContainerItem
     /* Tool uses */
 
     // Types
-    public abstract String[] toolCategories ();
+    public abstract String[] getTraits ();
 
     // Mining
     @Override
@@ -791,42 +774,37 @@ public abstract class ToolCore extends Item implements IEnergyContainerItem
     }
 
     // TE support section -- from COFH core API reference section
-    public void setMaxTransfer (int maxTransfer)
-    {
-        setMaxReceive(maxTransfer);
-        setMaxExtract(maxTransfer);
-    }
 
-    public void setMaxReceive (int maxReceive)
-    {
-        this.maxReceive = maxReceive;
-    }
-
-    public void setMaxExtract (int maxExtract)
-    {
-        this.maxExtract = maxExtract;
-    }
+    // TE power constants. These are only for backup if the lookup of the real value somehow fails!
+    protected int capacity = 400000;
+    protected int maxReceive = 400000;
+    protected int maxExtract = 80;
 
     /* IEnergyContainerItem */
     @Override
+    @Optional.Method(modid = "CoFHLib")
     public int receiveEnergy (ItemStack container, int maxReceive, boolean simulate)
     {
         NBTTagCompound tags = container.getTagCompound();
         if (tags == null || !tags.hasKey("Energy"))
             return 0;
         int energy = tags.getInteger("Energy");
-        int energyReceived = Math.min(capacity - energy, Math.min(this.maxReceive, maxReceive));
+        int energyReceived = tags.hasKey("EnergyReceiveRate") ? tags.getInteger("EnergyReceiveRate") : this.maxReceive; // backup value
+        int maxEnergy = tags.hasKey("EnergyMax") ? tags.getInteger("EnergyMax") : this.capacity; // backup value
+
+        // calculate how much we can receive
+        energyReceived = Math.min(maxEnergy - energy, Math.min(energyReceived, maxReceive));
         if (!simulate)
         {
             energy += energyReceived;
             tags.setInteger("Energy", energy);
             container.setItemDamage(1 + (getMaxEnergyStored(container) - energy) * (container.getMaxDamage() - 2) / getMaxEnergyStored(container));
-
         }
         return energyReceived;
     }
 
     @Override
+    @Optional.Method(modid = "CoFHLib")
     public int extractEnergy (ItemStack container, int maxExtract, boolean simulate)
     {
         NBTTagCompound tags = container.getTagCompound();
@@ -835,18 +813,21 @@ public abstract class ToolCore extends Item implements IEnergyContainerItem
             return 0;
         }
         int energy = tags.getInteger("Energy");
-        int energyExtracted = Math.min(energy, Math.min(this.maxExtract, maxExtract));
+        int energyExtracted = tags.hasKey("EnergyExtractionRate") ? tags.getInteger("EnergyExtractionRate") : this.maxExtract; // backup value
+
+        // calculate how much we can extract
+        energyExtracted = Math.min(energy, Math.min(energyExtracted, maxExtract));
         if (!simulate)
         {
             energy -= energyExtracted;
             tags.setInteger("Energy", energy);
             container.setItemDamage(1 + (getMaxEnergyStored(container) - energy) * (container.getMaxDamage() - 1) / getMaxEnergyStored(container));
-
         }
         return energyExtracted;
     }
 
     @Override
+    @Optional.Method(modid = "CoFHLib")
     public int getEnergyStored (ItemStack container)
     {
         NBTTagCompound tags = container.getTagCompound();
@@ -858,11 +839,16 @@ public abstract class ToolCore extends Item implements IEnergyContainerItem
     }
 
     @Override
+    @Optional.Method(modid = "CoFHLib")
     public int getMaxEnergyStored (ItemStack container)
     {
         NBTTagCompound tags = container.getTagCompound();
         if (tags == null || !tags.hasKey("Energy"))
             return 0;
+
+        if (tags.hasKey("EnergyMax"))
+            return tags.getInteger("EnergyMax");
+        // backup
         return capacity;
     }
     // end of TE support section

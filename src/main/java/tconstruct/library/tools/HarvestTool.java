@@ -1,17 +1,22 @@
 package tconstruct.library.tools;
 
+import cpw.mods.fml.client.FMLClientHandler;
 import mantle.world.WorldHelper;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.network.NetHandlerPlayClient;
+import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemBlock;
-import net.minecraft.item.ItemStack;
+import net.minecraft.item.*;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.network.INetHandler;
+import net.minecraft.network.play.client.C07PacketPlayerDigging;
 import net.minecraft.world.World;
-import tconstruct.library.ActiveToolMod;
-import tconstruct.library.TConstructRegistry;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.world.BlockEvent;
+import tconstruct.library.*;
 
 /* Base class for tools that should be harvesting blocks */
 
@@ -38,15 +43,12 @@ public abstract class HarvestTool extends ToolCore
         int hlvl = -1;
         if (!(tags.getBoolean("Broken")))
         {
-            Block localBlock = world.getBlock(x, y, z);
-            int localMeta = world.getBlockMetadata(x, y, z);
             if (block.getHarvestTool(meta) != null && block.getHarvestTool(meta).equals(this.getHarvestType()))
                 hlvl = block.getHarvestLevel(meta);
             int toolLevel = tags.getInteger("HarvestLevel");
             float blockHardness = block.getBlockHardness(world, x, y, z);
-            float localHardness = localBlock == null ? Float.MAX_VALUE : localBlock.getBlockHardness(world, x, y, z);
 
-            if (hlvl <= toolLevel && localHardness - 1.5 <= blockHardness)
+            if (hlvl <= toolLevel)
             {
                 boolean cancelHarvest = false;
                 for (ActiveToolMod mod : TConstructRegistry.activeModifiers)
@@ -55,23 +57,30 @@ public abstract class HarvestTool extends ToolCore
                         cancelHarvest = true;
                 }
 
+                // send blockbreak event
+                BlockEvent.BreakEvent event = new BlockEvent.BreakEvent(x, y, z, world, block, meta, player);
+                event.setCanceled(cancelHarvest);
+                MinecraftForge.EVENT_BUS.post(event);
+                cancelHarvest = event.isCanceled();
+
                 if (!cancelHarvest)
                 {
-                    if (localBlock != null && !(localHardness < 0))
+                    if (block != null)
                     {
 
                         boolean isEffective = false;
 
                         for (int iter = 0; iter < getEffectiveMaterials().length; iter++)
                         {
-                            if (getEffectiveMaterials()[iter] == localBlock.getMaterial() || localBlock == Blocks.monster_egg)
+                            if (getEffectiveMaterials()[iter] == block.getMaterial() || block == Blocks.monster_egg)
                             {
                                 isEffective = true;
                                 break;
                             }
                         }
 
-                        if (localBlock.getMaterial().isToolNotRequired())
+                        // Microblocks are registered as rock but no HarvestTool is set
+                        if (block.getMaterial().isToolNotRequired() || block.getHarvestTool(meta) == null)
                         {
                             isEffective = true;
                         }
@@ -80,14 +89,9 @@ public abstract class HarvestTool extends ToolCore
                         {
                             if (isEffective)
                             {
-                                if (localBlock.removedByPlayer(world, player, x, y, z))
-                                {
-                                    localBlock.onBlockDestroyedByPlayer(world, x, y, z, localMeta);
-                                }
-                                localBlock.harvestBlock(world, player, x, y, z, localMeta);
-                                localBlock.onBlockHarvested(world, x, y, z, localMeta, player);
+                                mineBlock(world, x, y, z, meta, player, block);
                                 if (blockHardness > 0f)
-                                    onBlockDestroyed(stack, world, localBlock, x, y, z, player);
+                                    onBlockDestroyed(stack, world, block, x, y, z, player);
                                 world.func_147479_m(x, y, z);
                             }
                             else
@@ -130,7 +134,7 @@ public abstract class HarvestTool extends ToolCore
                 return calculateStrength(tags, block, meta);
             }
         }
-        if (block.getHarvestLevel(meta) > 0)
+        if (this.getHarvestType().equals(block.getHarvestTool(meta)) && block.getHarvestLevel(meta) > 0)
         {
             return calculateStrength(tags, block, meta); // No issue if the
                                                          // harvest level is
@@ -139,38 +143,24 @@ public abstract class HarvestTool extends ToolCore
         return super.getDigSpeed(stack, block, meta);
     }
 
-    float calculateStrength (NBTTagCompound tags, Block block, int meta)
+    public float calculateStrength (NBTTagCompound tags, Block block, int meta)
     {
-        float mineSpeed = tags.getInteger("MiningSpeed");
-        int heads = 1;
-        if (tags.hasKey("MiningSpeed2"))
-        {
-            mineSpeed += tags.getInteger("MiningSpeed2");
-            heads++;
-        }
 
-        if (tags.hasKey("MiningSpeedHandle"))
-        {
-            mineSpeed += tags.getInteger("MiningSpeedHandle");
-            heads++;
-        }
-
-        if (tags.hasKey("MiningSpeedExtra"))
-        {
-            mineSpeed += tags.getInteger("MiningSpeedExtra");
-            heads++;
-        }
-        float trueSpeed = mineSpeed / (heads * 100f);
         int hlvl = block.getHarvestLevel(meta);
-        int durability = tags.getInteger("Damage");
+        if (hlvl > tags.getInteger("HarvestLevel"))
+            return 0.1f;
 
-        float stonebound = tags.getFloat("Shoddy");
-        float bonusLog = (float) Math.log(durability / 72f + 1) * 2 * stonebound;
-        trueSpeed += bonusLog;
+        return AbilityHelper.calcToolSpeed(this, tags);
+    }
 
-        if (hlvl <= tags.getInteger("HarvestLevel"))
-            return trueSpeed;
-        return 0.1f;
+    public float breakSpeedModifier ()
+    {
+        return 1.0f;
+    }
+
+    public float stoneboundModifier ()
+    {
+        return 72f;
     }
 
     @Override
@@ -180,12 +170,7 @@ public abstract class HarvestTool extends ToolCore
         {
             return true;
         }
-        for (Material m : getEffectiveMaterials())
-        {
-            if (m == block.getMaterial())
-                return true;
-        }
-        return false;
+        return isEffective(block.getMaterial());
     }
 
     @Override
@@ -195,7 +180,7 @@ public abstract class HarvestTool extends ToolCore
     }
 
     @Override
-    public String[] toolCategories ()
+    public String[] getTraits ()
     {
         return new String[] { "harvest" };
     }
@@ -203,6 +188,15 @@ public abstract class HarvestTool extends ToolCore
     protected abstract Material[] getEffectiveMaterials ();
 
     protected abstract String getHarvestType ();
+
+    public boolean isEffective (Material material)
+    {
+        for (Material m : getEffectiveMaterials())
+            if (m == material)
+                return true;
+
+        return false;
+    }
 
     //Right-click
     @Override
@@ -283,5 +277,48 @@ public abstract class HarvestTool extends ToolCore
          */
 
         return used;
+    }
+
+    @Override
+    public int getHarvestLevel (ItemStack stack, String toolClass)
+    {
+        if (!(stack.getItem() instanceof HarvestTool) || !getHarvestType().equals(toolClass))
+        {
+            return -1;
+        }
+
+        NBTTagCompound tags = stack.getTagCompound().getCompoundTag("InfiTool");
+        int harvestLvl = tags.getInteger("HarvestLevel");
+        return harvestLvl;
+    }
+
+    // The Scythe is not a HarvestTool and can't call this method, if you change something here you might change it there too.
+    public void mineBlock (World world, int x, int y, int z, int meta, EntityPlayer player, Block block)
+    {
+        // Workaround for dropping experience
+        boolean silktouch = EnchantmentHelper.getSilkTouchModifier(player);
+        int fortune = EnchantmentHelper.getFortuneModifier(player);
+        int exp = block.getExpDrop(world, meta, fortune);
+
+        block.onBlockHarvested(world, x, y, z, meta, player);
+        if (block.removedByPlayer(world, player, x, y, z, true))
+        {
+            block.onBlockDestroyedByPlayer(world, x, y, z, meta);
+            block.harvestBlock(world, player, x, y, z, meta);
+            // Workaround for dropping experience
+            if (!silktouch)
+                block.dropXpOnBlockBreak(world, x, y, z, exp);
+
+            if (world.isRemote)
+            {
+                INetHandler handler = FMLClientHandler.instance().getClientPlayHandler();
+                if (handler != null && handler instanceof NetHandlerPlayClient)
+                {
+                    NetHandlerPlayClient handlerClient = (NetHandlerPlayClient) handler;
+                    handlerClient.addToSendQueue(new C07PacketPlayerDigging(0, x, y, z, Minecraft.getMinecraft().objectMouseOver.sideHit));
+                    handlerClient.addToSendQueue(new C07PacketPlayerDigging(2, x, y, z, Minecraft.getMinecraft().objectMouseOver.sideHit));
+                }
+            }
+        }
     }
 }

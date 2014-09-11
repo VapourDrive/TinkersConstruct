@@ -1,20 +1,16 @@
 package tconstruct.items.tools;
 
+import cpw.mods.fml.relauncher.*;
 import java.util.List;
-
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
+import net.minecraft.item.*;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.StatCollector;
 import net.minecraft.world.World;
-import tconstruct.TConstruct;
-import tconstruct.common.TRepo;
 import tconstruct.library.crafting.ToolBuilder;
 import tconstruct.library.tools.ToolCore;
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
+import tconstruct.tools.TinkerTools;
 
 public class Arrow extends ToolCore
 {
@@ -73,17 +69,17 @@ public class Arrow extends ToolCore
     @Override
     public Item getHeadItem ()
     {
-        return TRepo.arrowhead;
+        return TinkerTools.arrowhead;
     }
 
     @Override
     public Item getAccessoryItem ()
     {
-        return TRepo.fletching;
+        return TinkerTools.fletching;
     }
 
     @Override
-    public String[] toolCategories ()
+    public String[] getTraits ()
     {
         return new String[] { "ammo" };
     }
@@ -103,15 +99,7 @@ public class Arrow extends ToolCore
         Item extra = getExtraItem();
         ItemStack extraStack = extra != null ? new ItemStack(extra, 1, 0) : null;
         ItemStack tool = ToolBuilder.instance.buildTool(new ItemStack(getHeadItem(), 1, 3), new ItemStack(getHandleItem(), 1, 0), accessoryStack, extraStack, "");
-        if (tool == null)
-        {
-            if (!TRepo.supressMissingToolLogs)
-            {
-                TConstruct.logger.warn("Creative builder failed tool for Vanilla style" + this.getToolName());
-                TConstruct.logger.warn("Make sure you do not have item ID conflicts");
-            }
-        }
-        else
+        if (tool != null)
         {
             tool.stackSize = 1;
             tool.getTagCompound().getCompoundTag("InfiTool").setBoolean("Built", true);
@@ -123,21 +111,9 @@ public class Arrow extends ToolCore
         accessoryStack = accessory != null ? new ItemStack(getAccessoryItem(), 1, random.nextInt(4)) : null;
         extra = getExtraItem();
         extraStack = extra != null ? new ItemStack(extra, 1, 0) : null;
-        tool = ToolBuilder.instance
-                .buildTool(new ItemStack(getHeadItem(), 1, random.nextInt(18)), new ItemStack(getHandleItem(), 1, random.nextInt(18)), accessoryStack, extraStack, StatCollector.translateToLocal("item.tool.randomarrow"));
+        tool = ToolBuilder.instance.buildTool(new ItemStack(getHeadItem(), 1, random.nextInt(18)), new ItemStack(getHandleItem(), 1, random.nextInt(18)), accessoryStack, extraStack, StatCollector.translateToLocal("item.tool.randomarrow"));
 
-        if (tool == null)
-        {
-            if (!TRepo.supressMissingToolLogs)
-            {
-                if (!TRepo.supressMissingToolLogs)
-                {
-                    TConstruct.logger.warn("Creative builder failed tool for Vanilla style" + this.getToolName());
-                    TConstruct.logger.warn("Make sure you do not have item ID conflicts");
-                }
-            }
-        }
-        else
+        if (tool != null)
         {
             tool.stackSize = 1;
             tool.getTagCompound().getCompoundTag("InfiTool").setBoolean("Built", true);
@@ -153,13 +129,9 @@ public class Arrow extends ToolCore
         ItemStack accessoryStack = accessory != null ? new ItemStack(getAccessoryItem(), 1, 0) : null;
         Item extra = getExtraItem();
         ItemStack extraStack = extra != null ? new ItemStack(getExtraItem(), 1, id) : null;
-        ItemStack tool = ToolBuilder.instance.buildTool(new ItemStack(getHeadItem(), 1, id), new ItemStack(getHandleItem(), 1, id), accessoryStack, extraStack, name + getToolName());
-        if (tool == null)
-        {
-            TConstruct.logger.warn("Creative builder failed tool for " + name + this.getToolName());
-            TConstruct.logger.warn("Make sure you do not have item ID conflicts");
-        }
-        else
+        String completeName = String.format("%s %s", name, getLocalizedToolName());
+        ItemStack tool = ToolBuilder.instance.buildTool(new ItemStack(getHeadItem(), 1, id), new ItemStack(getHandleItem(), 1, id), accessoryStack, extraStack, completeName);
+        if (tool != null)
         {
             tool.stackSize = 1;
             tool.getTagCompound().getCompoundTag("InfiTool").setBoolean("Built", true);

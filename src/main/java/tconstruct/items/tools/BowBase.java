@@ -1,34 +1,22 @@
 package tconstruct.items.tools;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
+import cpw.mods.fml.relauncher.*;
+import java.util.*;
 import net.minecraft.client.renderer.texture.IIconRegister;
-import net.minecraft.enchantment.Enchantment;
-import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.InventoryPlayer;
+import net.minecraft.enchantment.*;
+import net.minecraft.entity.player.*;
 import net.minecraft.entity.projectile.EntityArrow;
 import net.minecraft.init.Items;
-import net.minecraft.item.EnumAction;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
+import net.minecraft.item.*;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.IIcon;
 import net.minecraft.world.World;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.entity.player.ArrowLooseEvent;
-import net.minecraftforge.event.entity.player.ArrowNockEvent;
-import tconstruct.TConstruct;
-import tconstruct.common.TRepo;
-import tconstruct.entity.projectile.ArrowEntity;
+import net.minecraftforge.event.entity.player.*;
 import tconstruct.library.crafting.ToolBuilder;
-import tconstruct.library.tools.AbilityHelper;
-import tconstruct.library.tools.ToolCore;
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
+import tconstruct.library.tools.*;
+import tconstruct.tools.TinkerTools;
+import tconstruct.tools.entity.ArrowEntity;
 
 public abstract class BowBase extends ToolCore
 {
@@ -65,7 +53,7 @@ public abstract class BowBase extends ToolCore
         time = event.charge;
 
         boolean creative = player.capabilities.isCreativeMode || EnchantmentHelper.getEnchantmentLevel(Enchantment.infinity.effectId, stack) > 0;
-        int slotID = getInventorySlotContainItem(TRepo.arrow, player.inventory);
+        int slotID = getInventorySlotContainItem(TinkerTools.arrow, player.inventory);
         int arrowID = getInventorySlotContainItem(Items.arrow, player.inventory);
         int arrowState = 0;
         ItemStack tinkerArrow = null;
@@ -151,7 +139,7 @@ public abstract class BowBase extends ToolCore
                 // if (tinkerArrow != null)
                 if (slotID != -1 && (arrowID == -1 || slotID < arrowID))
                 {
-                    player.inventory.consumeInventoryItem(TRepo.arrow);
+                    player.inventory.consumeInventoryItem(TinkerTools.arrow);
                 }
                 else
                 {
@@ -222,7 +210,7 @@ public abstract class BowBase extends ToolCore
                     return event.result;
                 }
 
-                if (player.capabilities.isCreativeMode || player.inventory.hasItemStack(new ItemStack(Items.arrow)) || player.inventory.hasItemStack(new ItemStack(TRepo.arrow)))
+                if (player.capabilities.isCreativeMode || player.inventory.hasItemStack(new ItemStack(Items.arrow)) || player.inventory.hasItemStack(new ItemStack(TinkerTools.arrow)))
                 {
                     player.setItemInUse(stack, this.getMaxItemUseDuration(stack));
                 }
@@ -521,6 +509,10 @@ public abstract class BowBase extends ToolCore
         int drawTime = toolTag.getInteger("DrawSpeed");
         float flightSpeed = toolTag.getFloat("FlightSpeed");
         drawTime *= flightSpeed;
+        if (usingItem == null)
+        {
+            return getIcon(stack, renderPass);
+        }
         if (useTime >= drawTime - 2)
         {
             return getIcon3(stack, renderPass);
@@ -770,19 +762,12 @@ public abstract class BowBase extends ToolCore
         ItemStack accessoryStack = accessory != null ? new ItemStack(getAccessoryItem(), 1, id) : null;
         Item extra = getExtraItem();
         ItemStack extraStack = extra != null ? new ItemStack(getExtraItem(), 1, id) : null;
-        ItemStack tool = ToolBuilder.instance.buildTool(new ItemStack(getHeadItem(), 1, id), new ItemStack(getHandleItem(), 1, 0), accessoryStack, extraStack, name + getToolName());
+        String completeName = String.format("%s %s", name, getLocalizedToolName());
+        ItemStack tool = ToolBuilder.instance.buildTool(new ItemStack(getHeadItem(), 1, id), new ItemStack(getHandleItem(), 1, id), accessoryStack, extraStack, completeName);
         if (tool == null)
-        {
-            if (!TRepo.supressMissingToolLogs)
-            {
-                TConstruct.logger.warn("Creative builder failed tool for " + name + this.getToolName());
-                TConstruct.logger.warn("Make sure you do not have item ID conflicts");
-            }
-        }
-        else
-        {
-            tool.getTagCompound().getCompoundTag("InfiTool").setBoolean("Built", true);
-            list.add(tool);
-        }
+            return;
+
+        tool.getTagCompound().getCompoundTag("InfiTool").setBoolean("Built", true);
+        list.add(tool);
     }
 }

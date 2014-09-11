@@ -2,9 +2,8 @@ package tconstruct.modifiers.tools;
 
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.StatCollector;
 
-public class ModSmite extends ToolModTypeFilter
+public class ModSmite extends ItemModTypeFilter
 {
     String tooltipName;
     int max = 36;
@@ -13,16 +12,19 @@ public class ModSmite extends ToolModTypeFilter
     public ModSmite(String type, int effect, ItemStack[] items, int[] values)
     {
         super(effect, "ModSmite", items, values);
-        tooltipName = "\u00a7e" + StatCollector.translateToLocal("modifier.tool.smite");
+        tooltipName = "\u00a7eSmite";
         tagName = type;
     }
 
     @Override
     protected boolean canModify (ItemStack tool, ItemStack[] input)
     {
+        if (matchingAmount(input) > max)
+            return false;
+
         NBTTagCompound tags = tool.getTagCompound().getCompoundTag("InfiTool");
         if (!tags.hasKey(key))
-            return tags.getInteger("Modifiers") > 0;
+            return tags.getInteger("Modifiers") > 0 && matchingAmount(input) <= max;
 
         int keyPair[] = tags.getIntArray(key);
         if (keyPair[0] + matchingAmount(input) <= keyPair[1])

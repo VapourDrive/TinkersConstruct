@@ -8,8 +8,7 @@ import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.World;
-import tconstruct.library.ActiveToolMod;
-import tconstruct.library.TConstructRegistry;
+import tconstruct.library.*;
 
 /* Base class for harvest tools with each head having a different purpose */
 
@@ -50,7 +49,9 @@ public abstract class DualHarvestTool extends HarvestTool
         else
         {
             if (!player.capabilities.isCreativeMode)
-                onBlockDestroyed(stack, world, block, x, y, z, player);
+            {
+                mineBlock(world, x, y, z, meta, player, block);
+            }
             WorldHelper.setBlockToAir(world, x, y, z);
             if (!world.isRemote)
                 world.playAuxSFX(2001, x, y, z, Block.getIdFromBlock(block) + (meta << 12));
@@ -109,20 +110,9 @@ public abstract class DualHarvestTool extends HarvestTool
     public boolean func_150897_b (Block block)
     {
         if (block.getMaterial().isToolNotRequired())
-        {
             return true;
-        }
-        for (Material m : getEffectiveMaterials())
-        {
-            if (m == block.getMaterial())
-                return true;
-        }
-        for (Material m : getEffectiveSecondaryMaterials())
-        {
-            if (m == block.getMaterial())
-                return true;
-        }
-        return false;
+
+        return isEffective(block.getMaterial());
     }
 
     @Override
@@ -132,7 +122,20 @@ public abstract class DualHarvestTool extends HarvestTool
     }
 
     @Override
-    public String[] toolCategories ()
+    public boolean isEffective (Material material)
+    {
+        if (super.isEffective(material))
+            return true;
+
+        for (Material m : getEffectiveSecondaryMaterials())
+            if (m == material)
+                return true;
+
+        return false;
+    }
+
+    @Override
+    public String[] getTraits ()
     {
         return new String[] { "harvest", "dualharvest" };
     }

@@ -1,14 +1,11 @@
 package tconstruct.modifiers.tools;
 
-import java.util.Arrays;
-import java.util.List;
-
+import java.util.*;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import tconstruct.library.tools.ToolCore;
-import net.minecraft.util.StatCollector;
 
-public class ModBlaze extends ToolModTypeFilter
+public class ModBlaze extends ItemModTypeFilter
 {
     String tooltipName;
     int max;
@@ -16,30 +13,35 @@ public class ModBlaze extends ToolModTypeFilter
     public ModBlaze(int effect, ItemStack[] items, int[] values)
     {
         super(effect, "Blaze", items, values);
-        tooltipName = "\u00a76" + StatCollector.translateToLocal("modifier.tool.blaze");
+        tooltipName = "\u00a76Fiery";
         max = 25;
     }
 
     @Override
     protected boolean canModify (ItemStack tool, ItemStack[] input)
     {
-        ToolCore toolItem = (ToolCore) tool.getItem();
-        if (!validType(toolItem))
-            return false;
+        if (tool.getItem() instanceof ToolCore)
+        {
+            ToolCore toolItem = (ToolCore) tool.getItem();
+            if (!validType(toolItem))
+                return false;
 
-        NBTTagCompound tags = tool.getTagCompound().getCompoundTag("InfiTool");
-        if (!tags.hasKey(key))
-            return tags.getInteger("Modifiers") > 0;
+            if (matchingAmount(input) > max)
+                return false;
 
-        int keyPair[] = tags.getIntArray(key);
-        if (keyPair[0] + matchingAmount(input) <= keyPair[1])
-            return true;
+            NBTTagCompound tags = tool.getTagCompound().getCompoundTag("InfiTool");
+            if (!tags.hasKey(key))
+                return tags.getInteger("Modifiers") > 0 && matchingAmount(input) <= max;
 
-        else if (keyPair[0] == keyPair[1])
-            return tags.getInteger("Modifiers") > 0;
+            int keyPair[] = tags.getIntArray(key);
+            if (keyPair[0] + matchingAmount(input) <= keyPair[1])
+                return true;
 
-        else
-            return false;
+            else if (keyPair[0] == keyPair[1])
+                return tags.getInteger("Modifiers") > 0;
+
+        }
+        return false;
     }
 
     @Override
@@ -50,7 +52,7 @@ public class ModBlaze extends ToolModTypeFilter
         if (tags.hasKey(key))
         {
             int[] keyPair = tags.getIntArray(key);
-            if (keyPair[0] == max)
+            if (keyPair[0] % max == 0)
             {
                 keyPair[0] += increase;
                 keyPair[1] += max;
@@ -88,14 +90,13 @@ public class ModBlaze extends ToolModTypeFilter
     {
         NBTTagCompound tags = tool.getTagCompound().getCompoundTag("InfiTool");
         String tip = "ModifierTip" + keys[2];
-        String modName = "\u00a76" + StatCollector.translateToLocal("gui.modifier.blaze") + "(" + keys[0] + "/" + keys[1] + ")";
+        String modName = "\u00a76Blaze (" + keys[0] + "/" + keys[1] + ")";
         tags.setString(tip, modName);
     }
 
-    @Override
     public boolean validType (ToolCore tool)
     {
-        List list = Arrays.asList(tool.toolCategories());
+        List list = Arrays.asList(tool.getTraits());
         return list.contains("melee") || list.contains("ammo");
     }
 }

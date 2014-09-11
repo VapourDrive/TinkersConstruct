@@ -6,9 +6,7 @@ import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.entity.RenderItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
-
-import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL12;
+import org.lwjgl.opengl.*;
 
 public abstract class AbstractTab extends GuiButton
 {
@@ -29,7 +27,7 @@ public abstract class AbstractTab extends GuiButton
         {
             GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
 
-            int yTexPos = this.enabled ? 0 : 32;
+            int yTexPos = this.enabled ? 3 : 32;
             int ySize = this.enabled ? 28 : 32;
             int xOffset = this.id == 2 ? 0 : 1;
 

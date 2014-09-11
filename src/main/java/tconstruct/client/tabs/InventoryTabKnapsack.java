@@ -1,26 +1,25 @@
 package tconstruct.client.tabs;
 
 import net.minecraft.item.ItemStack;
-import tconstruct.client.TControls;
-import tconstruct.client.TProxyClient;
-import tconstruct.common.TRepo;
+import tconstruct.armor.*;
+import tconstruct.client.ArmorControls;
 
 public class InventoryTabKnapsack extends AbstractTab
 {
     public InventoryTabKnapsack()
     {
-        super(0, 0, 0, new ItemStack(TRepo.knapsack));
+        super(0, 0, 0, new ItemStack(TinkerArmor.knapsack));
     }
 
     @Override
     public void onTabClicked ()
     {
-        TControls.openKnapsackGui();
+        ArmorControls.openKnapsackGui();
     }
 
     @Override
     public boolean shouldAddToList ()
     {
-        return TProxyClient.armorExtended.inventory[2] != null && TProxyClient.armorExtended.inventory[2].getItem() == TRepo.knapsack;
+        return ArmorProxyClient.armorExtended.inventory[2] != null && ArmorProxyClient.armorExtended.inventory[2].getItem() == TinkerArmor.knapsack;
     }
 }

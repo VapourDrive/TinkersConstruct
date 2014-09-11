@@ -1,24 +1,18 @@
 package tconstruct.items.tools;
 
+import cpw.mods.fml.relauncher.*;
 import java.util.List;
-
 import net.minecraft.creativetab.CreativeTabs;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.*;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
+import net.minecraft.item.*;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.potion.Potion;
-import net.minecraft.potion.PotionEffect;
+import net.minecraft.potion.*;
 import net.minecraft.world.World;
-import tconstruct.blocks.logic.EquipLogic;
-import tconstruct.common.TRepo;
 import tconstruct.library.crafting.ToolBuilder;
-import tconstruct.library.tools.AbilityHelper;
-import tconstruct.library.tools.Weapon;
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
+import tconstruct.library.tools.*;
+import tconstruct.tools.TinkerTools;
+import tconstruct.tools.logic.EquipLogic;
 
 public class FryingPan extends Weapon
 {
@@ -51,12 +45,6 @@ public class FryingPan extends Weapon
     public void onEntityDamaged (World world, EntityLivingBase player, Entity entity)
     {
         world.playSoundEffect(entity.posX, entity.posY, entity.posZ, "tinker:frypan_hit", 1.0F, (random.nextFloat() - random.nextFloat()) * 0.2F + 1.0F);
-    }
-
-    @Override
-    public String getToolName ()
-    {
-        return "Frying Pan";
     }
 
     @Override
@@ -125,14 +113,14 @@ public class FryingPan extends Weapon
             {
                 return false;
             }
-            else if (!TRepo.heldItemBlock.canPlaceBlockAt(world, x, y, z))
+            else if (!TinkerTools.heldItemBlock.canPlaceBlockAt(world, x, y, z))
             {
                 return false;
             }
             else
             {
-                world.setBlock(x, y, z, TRepo.heldItemBlock, 0, 3);
-                TRepo.heldItemBlock.onBlockPlacedBy(world, x, y, z, player, stack);
+                world.setBlock(x, y, z, TinkerTools.heldItemBlock, 0, 3);
+                TinkerTools.heldItemBlock.onBlockPlacedBy(world, x, y, z, player, stack);
                 world.playSoundEffect(x, y, z, "tinker:frypan_hit", 1.0F, (random.nextFloat() - random.nextFloat()) * 0.2F + 0.65F);
 
                 EquipLogic logic = (EquipLogic) world.getTileEntity(x, y, z);
@@ -147,7 +135,7 @@ public class FryingPan extends Weapon
     @Override
     public Item getHeadItem ()
     {
-        return TRepo.frypanHead;
+        return TinkerTools.frypanHead;
     }
 
     @Override

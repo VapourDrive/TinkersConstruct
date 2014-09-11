@@ -1,17 +1,13 @@
 package tconstruct.items.tools;
 
+import cpw.mods.fml.relauncher.*;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
+import net.minecraft.item.*;
 import net.minecraft.world.World;
-import tconstruct.common.TRepo;
-import tconstruct.library.tools.AbilityHelper;
-import tconstruct.library.tools.HarvestTool;
-import tconstruct.util.config.PHConstruct;
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
+import tconstruct.library.tools.*;
+import tconstruct.tools.TinkerTools;
 
 public class Hatchet extends HarvestTool
 {
@@ -42,15 +38,12 @@ public class Hatchet extends HarvestTool
         return AbilityHelper.onBlockChanged(itemstack, world, block, x, y, z, player, random);
     }
 
-    static Material[] materials = { Material.wood, Material.leaves, Material.vine, Material.circuits, Material.cactus };// TODO find
-                                                                                                                        // this//,
-                                                                                                                        // Material.pumpkin
-                                                                                                                        // };
+    static Material[] materials = { Material.wood, Material.leaves, Material.vine, Material.circuits, Material.cactus, Material.gourd };
 
     @Override
     public Item getHeadItem ()
     {
-        return TRepo.hatchetHead;
+        return TinkerTools.hatchetHead;
     }
 
     @Override

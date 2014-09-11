@@ -1,16 +1,13 @@
 package tconstruct.library.armor;
 
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.List;
-
+import java.util.*;
 import net.minecraft.item.ItemStack;
 
 public abstract class ArmorModTypeFilter extends ArmorMod
 {
     public final List<Integer> increase;
 
-    public ArmorModTypeFilter(int effect, String dataKey, EnumSet<EnumArmorPart> armorTypes, ItemStack[] items, int[] values)
+    public ArmorModTypeFilter(int effect, String dataKey, EnumSet<ArmorPart> armorTypes, ItemStack[] items, int[] values)
     {
         super(effect, dataKey, armorTypes, items);
         assert items.length == values.length : "Itemstacks and their values for armor modifiers must be the same length";

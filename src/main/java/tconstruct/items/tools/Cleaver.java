@@ -1,18 +1,13 @@
 package tconstruct.items.tools;
 
+import cpw.mods.fml.relauncher.*;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.potion.Potion;
-import net.minecraft.potion.PotionEffect;
+import net.minecraft.item.*;
+import net.minecraft.potion.*;
 import net.minecraft.world.World;
-import tconstruct.common.TRepo;
-import tconstruct.library.tools.AbilityHelper;
-import tconstruct.library.tools.Weapon;
-import tconstruct.util.config.PHConstruct;
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
+import tconstruct.library.tools.*;
+import tconstruct.tools.TinkerTools;
 
 public class Cleaver extends Weapon
 {
@@ -25,25 +20,25 @@ public class Cleaver extends Weapon
     @Override
     public Item getHeadItem ()
     {
-        return TRepo.largeSwordBlade;
+        return TinkerTools.largeSwordBlade;
     }
 
     @Override
     public Item getHandleItem ()
     {
-        return TRepo.toughRod;
+        return TinkerTools.toughRod;
     }
 
     @Override
     public Item getAccessoryItem ()
     {
-        return TRepo.largePlate;
+        return TinkerTools.largePlate;
     }
 
     @Override
     public Item getExtraItem ()
     {
-        return TRepo.toughRod;
+        return TinkerTools.toughRod;
     }
 
     @Override
@@ -150,7 +145,7 @@ public class Cleaver extends Weapon
             ItemStack equipped = player.getCurrentEquippedItem();
             if (equipped == stack)
             {
-                player.addPotionEffect(new PotionEffect(Potion.digSlowdown.id, 1, 2));
+                player.addPotionEffect(new PotionEffect(Potion.digSlowdown.id, 2, 2, true));
             }
         }
     }

@@ -1,31 +1,27 @@
 package tconstruct.items.tools;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-
-import mantle.world.WorldHelper;
+import cpw.mods.fml.client.FMLClientHandler;
+import cpw.mods.fml.relauncher.*;
+import java.util.*;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
-import net.minecraft.enchantment.Enchantment;
-import net.minecraft.enchantment.EnchantmentHelper;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.network.NetHandlerPlayClient;
+import net.minecraft.enchantment.*;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
+import net.minecraft.item.*;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.network.INetHandler;
+import net.minecraft.network.play.client.C07PacketPlayerDigging;
 import net.minecraft.stats.StatList;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.world.World;
 import net.minecraftforge.common.IShearable;
-import tconstruct.common.TRepo;
-import tconstruct.library.ActiveToolMod;
-import tconstruct.library.TConstructRegistry;
-import tconstruct.library.tools.AbilityHelper;
-import tconstruct.library.tools.Weapon;
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
+import tconstruct.library.*;
+import tconstruct.library.tools.*;
+import tconstruct.tools.TinkerTools;
 
 public class Scythe extends Weapon
 {
@@ -45,32 +41,30 @@ public class Scythe extends Weapon
         return materials;
     }
 
-    static Material[] materials = new Material[] { Material.web, Material.cactus, Material.plants, Material.leaves, Material.vine };// TODO find this//, Material.pumpkin,
-                                                                                                                                    // Material.plants, Material.vine,
-                                                                                                                                    // Material.leaves };
+    static Material[] materials = new Material[] { Material.web, Material.cactus, Material.plants, Material.leaves, Material.vine, Material.gourd };
 
     @Override
     public Item getHeadItem ()
     {
-        return TRepo.scytheBlade;
+        return TinkerTools.scytheBlade;
     }
 
     @Override
     public Item getHandleItem ()
     {
-        return TRepo.toughRod;
+        return TinkerTools.toughRod;
     }
 
     @Override
     public Item getAccessoryItem ()
     {
-        return TRepo.toughBinding;
+        return TinkerTools.toughBinding;
     }
 
     @Override
     public Item getExtraItem ()
     {
-        return TRepo.toughRod;
+        return TinkerTools.toughRod;
     }
 
     @SideOnly(Side.CLIENT)
@@ -149,7 +143,7 @@ public class Scythe extends Weapon
     }
 
     @Override
-    public String[] toolCategories ()
+    public String[] getTraits ()
     {
         return new String[] { "weapon", "melee", "harvest" };
     }
@@ -169,6 +163,7 @@ public class Scythe extends Weapon
             return false;
         NBTTagCompound tags = stack.getTagCompound().getCompoundTag("InfiTool");
         boolean butter = EnchantmentHelper.getEnchantmentLevel(Enchantment.silkTouch.effectId, stack) > 0;
+        int fortune = EnchantmentHelper.getFortuneModifier(player);
         for (int xPos = x - 1; xPos <= x + 1; xPos++)
         {
             for (int yPos = y - 1; yPos <= y + 1; yPos++)
@@ -199,8 +194,7 @@ public class Scythe extends Weapon
                                         {
                                             if (butter && localBlock instanceof IShearable && ((IShearable) localBlock).isShearable(stack, player.worldObj, x, y, z))
                                             {
-                                                ArrayList<ItemStack> drops = ((IShearable) localBlock).onSheared(stack, player.worldObj, x, y, z,
-                                                        EnchantmentHelper.getEnchantmentLevel(Enchantment.fortune.effectId, stack));
+                                                ArrayList<ItemStack> drops = ((IShearable) localBlock).onSheared(stack, player.worldObj, x, y, z, EnchantmentHelper.getEnchantmentLevel(Enchantment.fortune.effectId, stack));
                                                 Random rand = new Random();
 
                                                 if (!world.isRemote)
@@ -222,12 +216,31 @@ public class Scythe extends Weapon
                                             }
                                             else
                                             {
-                                                if (localBlock.removedByPlayer(world, player, xPos, yPos, zPos))
+
+                                                // Workaround for dropping experience
+                                                int exp = localBlock.getExpDrop(world, localMeta, fortune);
+
+                                                localBlock.onBlockHarvested(world, xPos, yPos, zPos, localMeta, player);
+                                                if (localBlock.removedByPlayer(world, player, xPos, yPos, zPos, true))
                                                 {
                                                     localBlock.onBlockDestroyedByPlayer(world, xPos, yPos, zPos, localMeta);
+                                                    localBlock.harvestBlock(world, player, xPos, yPos, zPos, localMeta);
+                                                    // Workaround for dropping experience
+                                                    if (!butter)
+                                                        localBlock.dropXpOnBlockBreak(world, xPos, yPos, zPos, exp);
                                                 }
-                                                localBlock.harvestBlock(world, player, xPos, yPos, zPos, localMeta);
-                                                localBlock.onBlockHarvested(world, xPos, yPos, zPos, localMeta, player);
+
+                                                if (world.isRemote)
+                                                {
+                                                    INetHandler handler = FMLClientHandler.instance().getClientPlayHandler();
+                                                    if (handler != null && handler instanceof NetHandlerPlayClient)
+                                                    {
+                                                        NetHandlerPlayClient handlerClient = (NetHandlerPlayClient) handler;
+                                                        handlerClient.addToSendQueue(new C07PacketPlayerDigging(0, x, y, z, Minecraft.getMinecraft().objectMouseOver.sideHit));
+                                                        handlerClient.addToSendQueue(new C07PacketPlayerDigging(2, x, y, z, Minecraft.getMinecraft().objectMouseOver.sideHit));
+                                                    }
+                                                }
+
                                                 if (localHardness > 0f)
                                                     onBlockDestroyed(stack, world, localBlock, xPos, yPos, zPos, player);
                                             }
@@ -252,7 +265,7 @@ public class Scythe extends Weapon
     @Override
     public boolean onLeftClickEntity (ItemStack stack, EntityPlayer player, Entity entity)
     {
-        AxisAlignedBB box = AxisAlignedBB.getAABBPool().getAABB(entity.posX, entity.posY, entity.posZ, entity.posX + 1.0D, entity.posY + 1.0D, entity.posZ + 1.0D).expand(1.0D, 1.0D, 1.0D);
+        AxisAlignedBB box = AxisAlignedBB.getBoundingBox(entity.posX, entity.posY, entity.posZ, entity.posX + 1.0D, entity.posY + 1.0D, entity.posZ + 1.0D).expand(1.0D, 1.0D, 1.0D);
         List list = player.worldObj.getEntitiesWithinAABBExcludingEntity(player, box);
         for (Object o : list)
         {

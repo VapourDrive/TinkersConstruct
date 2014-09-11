@@ -1,39 +1,27 @@
 package tconstruct.library.tools;
 
-import java.util.Iterator;
-import java.util.List;
-import java.util.Random;
-
+import cofh.api.energy.IEnergyContainerItem;
+import cpw.mods.fml.common.eventhandler.Event.Result;
+import java.util.*;
 import net.minecraft.block.Block;
 import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.*;
 import net.minecraft.entity.item.EntityItem;
-import net.minecraft.entity.monster.EntityCreeper;
-import net.minecraft.entity.monster.EntityGhast;
-import net.minecraft.entity.monster.IMob;
+import net.minecraft.entity.monster.*;
 import net.minecraft.entity.passive.EntityWolf;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.entity.player.*;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.potion.Potion;
-import net.minecraft.stats.AchievementList;
-import net.minecraft.stats.StatList;
-import net.minecraft.util.AxisAlignedBB;
-import net.minecraft.util.DamageSource;
-import net.minecraft.util.MathHelper;
-import net.minecraft.util.MovingObjectPosition;
-import net.minecraft.util.Vec3;
+import net.minecraft.stats.*;
+import net.minecraft.util.*;
 import net.minecraft.world.World;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.util.FakePlayer;
 import net.minecraftforge.event.entity.player.UseHoeEvent;
-import tconstruct.library.ActiveToolMod;
-import tconstruct.library.TConstructRegistry;
+import tconstruct.library.*;
 import tconstruct.library.util.PiercingEntityDamage;
-import cpw.mods.fml.common.eventhandler.Event.Result;
 
 public class AbilityHelper
 {
@@ -138,8 +126,7 @@ public class AbilityHelper
 
                 if (damage > 0 || enchantDamage > 0)
                 {
-                    boolean criticalHit = player.fallDistance > 0.0F && !player.onGround && !player.isOnLadder() && !player.isInWater() && !player.isPotionActive(Potion.blindness)
-                            && player.ridingEntity == null && entity instanceof EntityLivingBase;
+                    boolean criticalHit = player.fallDistance > 0.0F && !player.onGround && !player.isOnLadder() && !player.isInWater() && !player.isPotionActive(Potion.blindness) && player.ridingEntity == null && entity instanceof EntityLivingBase;
 
                     for (ActiveToolMod mod : TConstructRegistry.activeModifiers)
                     {
@@ -211,8 +198,7 @@ public class AbilityHelper
 
                         if (knockback > 0)
                         {
-                            entity.addVelocity((double) (-MathHelper.sin(player.rotationYaw * (float) Math.PI / 180.0F) * (float) knockback * 0.5F), 0.1D,
-                                    (double) (MathHelper.cos(player.rotationYaw * (float) Math.PI / 180.0F) * (float) knockback * 0.5F));
+                            entity.addVelocity((double) (-MathHelper.sin(player.rotationYaw * (float) Math.PI / 180.0F) * (float) knockback * 0.5F), 0.1D, (double) (MathHelper.cos(player.rotationYaw * (float) Math.PI / 180.0F) * (float) knockback * 0.5F));
                             player.motionX *= 0.6D;
                             player.motionZ *= 0.6D;
                             player.setSprinting(false);
@@ -300,7 +286,7 @@ public class AbilityHelper
             {
                 EntityWolf var3 = (EntityWolf) living;
 
-                if (var3.isTamed() && player.getDisplayName().equals(var3.getOwnerName()))
+                if (var3.isTamed() && player.getDisplayName().equals(var3.func_152113_b()))
                 {
                     return;
                 }
@@ -308,15 +294,14 @@ public class AbilityHelper
 
             if (!(living instanceof EntityPlayer) || player.canAttackPlayer((EntityPlayer) living))
             {
-                List var6 = player.worldObj.getEntitiesWithinAABB(EntityWolf.class,
-                        AxisAlignedBB.getAABBPool().getAABB(player.posX, player.posY, player.posZ, player.posX + 1.0D, player.posY + 1.0D, player.posZ + 1.0D).expand(16.0D, 4.0D, 16.0D));
+                List var6 = player.worldObj.getEntitiesWithinAABB(EntityWolf.class, AxisAlignedBB.getBoundingBox(player.posX, player.posY, player.posZ, player.posX + 1.0D, player.posY + 1.0D, player.posZ + 1.0D).expand(16.0D, 4.0D, 16.0D));
                 Iterator var4 = var6.iterator();
 
                 while (var4.hasNext())
                 {
                     EntityWolf var5 = (EntityWolf) var4.next();
 
-                    if (var5.isTamed() && var5.getEntityToAttack() == null && player.getDisplayName().equals(var5.getOwnerName()) && (!par2 || !var5.isSitting()))
+                    if (var5.isTamed() && var5.getEntityToAttack() == null && player.getDisplayName().equals(var5.func_152113_b()) && (!par2 || !var5.isSitting()))
                     {
                         var5.setSitting(false);
                         var5.setTarget(living);
@@ -344,7 +329,7 @@ public class AbilityHelper
         if (entity instanceof EntityPlayer && ((EntityPlayer) entity).capabilities.isCreativeMode || tags == null)
             return;
 
-        if (ignoreCharge || !damageElectricTool(stack, tags, entity))
+        if (ignoreCharge || !damageEnergyTool(stack, tags, entity))
         {
             boolean damagedTool = false;
             for (ActiveToolMod mod : TConstructRegistry.activeModifiers)
@@ -385,64 +370,109 @@ public class AbilityHelper
         }
     }
 
-    public static boolean damageElectricTool (ItemStack stack, NBTTagCompound tags, Entity entity)
+    public static boolean damageEnergyTool (ItemStack stack, NBTTagCompound tags, Entity entity)
     {
-        if (tags.hasKey("Energy"))
-        {
-
-            NBTTagCompound toolTag = stack.getTagCompound().getCompoundTag("InfiTool");
-            int energy = -1;
-            if (tags.hasKey("Energy"))
-            {
-                energy = tags.getInteger("Energy");
-            }
-            int durability = toolTag.getInteger("Damage");
-            float shoddy = toolTag.getFloat("Shoddy");
-
-            float mineSpeed = toolTag.getInteger("MiningSpeed");
-            int heads = 1;
-            if (toolTag.hasKey("MiningSpeed2"))
-            {
-                mineSpeed += toolTag.getInteger("MiningSpeed2");
-                heads++;
-            }
-
-            if (toolTag.hasKey("MiningSpeedHandle"))
-            {
-                mineSpeed += toolTag.getInteger("MiningSpeedHandle");
-                heads++;
-            }
-
-            if (toolTag.hasKey("MiningSpeedExtra"))
-            {
-                mineSpeed += toolTag.getInteger("MiningSpeedExtra");
-                heads++;
-            }
-            float trueSpeed = mineSpeed / (heads * 100f);
-            float stonebound = toolTag.getFloat("Shoddy");
-            float bonusLog = (float) Math.log(durability / 72f + 1) * 2 * stonebound;
-            trueSpeed += bonusLog;
-            trueSpeed *= 6;
-            if (energy != -1)
-            {
-                if (energy < trueSpeed * 2)
-                {
-                    if (energy > 0)
-                        tags.setInteger("Energy", 0);
-                    return false;
-                }
-
-                energy -= trueSpeed * 2;
-                ToolCore tool = (ToolCore) stack.getItem();
-                stack.setItemDamage(1 + (tool.getMaxEnergyStored(stack) - energy) * (stack.getMaxDamage() - 1) / tool.getMaxEnergyStored(stack));
-                tags.setInteger("Energy", energy);
-            }
-            return true;
-        }
-        else
-        {
+        if (!tags.hasKey("Energy"))
             return false;
+
+        NBTTagCompound toolTag = stack.getTagCompound().getCompoundTag("InfiTool");
+        int energy = tags.getInteger("Energy");
+        int durability = toolTag.getInteger("Damage");
+        float shoddy = toolTag.getFloat("Shoddy");
+
+        float mineSpeed = toolTag.getInteger("MiningSpeed");
+        int heads = 1;
+        if (toolTag.hasKey("MiningSpeed2"))
+        {
+            mineSpeed += toolTag.getInteger("MiningSpeed2");
+            heads++;
         }
+
+        if (toolTag.hasKey("MiningSpeedHandle"))
+        {
+            mineSpeed += toolTag.getInteger("MiningSpeedHandle");
+            heads++;
+        }
+
+        if (toolTag.hasKey("MiningSpeedExtra"))
+        {
+            mineSpeed += toolTag.getInteger("MiningSpeedExtra");
+            heads++;
+        }
+        float trueSpeed = mineSpeed / (heads * 100f);
+        float stonebound = toolTag.getFloat("Shoddy");
+        float bonusLog = (float) Math.log(durability / 72f + 1) * 2 * stonebound;
+        trueSpeed += bonusLog;
+        trueSpeed *= 6;
+        if (energy != -1)
+        {
+            ToolCore tool = (ToolCore) stack.getItem();
+            // first try charging from the hotbar
+            if (entity instanceof EntityPlayer)
+            {
+                // workaround for charging flux-capacitors making tools unusable
+                chargeEnergyFromHotbar(stack, (EntityPlayer) entity, tags);
+                energy = tool.getEnergyStored(stack);
+            }
+
+            if (energy < trueSpeed * 2)
+            {
+                if (energy > 0)
+                    tags.setInteger("Energy", 0);
+                return false;
+            }
+
+            energy -= trueSpeed * 2;
+            tags.setInteger("Energy", energy);
+
+            stack.setItemDamage(1 + (tool.getMaxEnergyStored(stack) - energy) * (stack.getMaxDamage() - 1) / tool.getMaxEnergyStored(stack));
+        }
+        return true;
+    }
+
+    protected static void chargeEnergyFromHotbar (ItemStack stack, EntityPlayer player, NBTTagCompound tags)
+    {
+        // cool kids only
+        if (!(stack.getItem() instanceof ToolCore))
+            return;
+
+        ToolCore tool = (ToolCore) stack.getItem();
+
+        // check if the tool can actually receive energy
+        if (tool.receiveEnergy(stack, 1, true) != 1)
+            // no you're not going to charge that potato battery on your tool
+            return;
+
+        int buffer = tool.getEnergyStored(stack);
+        int max = tool.getMaxEnergyStored(stack);
+        int missing = max - buffer;
+
+        // you're full. xbox go home.
+        if (missing <= 0)
+            return;
+
+        // iterate through hotbar
+        for (int iter = 0; iter < 9; ++iter)
+        {
+            ItemStack slot = player.inventory.mainInventory[iter];
+
+            // check if item is not another tool
+            if (slot == null || slot.getItem() instanceof ToolCore)
+                continue;
+            // check if item gives energy
+            if (!(slot.getItem() instanceof IEnergyContainerItem))
+                continue;
+
+            IEnergyContainerItem fluxItem = (IEnergyContainerItem) slot.getItem();
+
+            // mDiyo EATS your power
+            while (fluxItem.extractEnergy(slot, missing, true) > 0)
+            {
+                missing -= fluxItem.extractEnergy(slot, missing, false);
+            }
+        }
+        // update energy
+        tags.setInteger("Energy", max - missing);
     }
 
     public static void breakTool (ItemStack stack, NBTTagCompound tags, Entity entity)
@@ -491,23 +521,16 @@ public class AbilityHelper
 
             if (event.getResult() == Result.ALLOW)
             {
-
-                onBlockChanged(stack, world, Blocks.air, x, y, z, player, random);
+                damageTool(stack, 1, player, false);
                 return true;
             }
 
-            Block b = world.getBlock(x, y, z);
-            Block babove = world.getBlock(x, y + 1, z);
+            Block block = world.getBlock(x, y, z);
 
-            if ((side == 0 || babove != Blocks.air || b != Blocks.grass) && b != Blocks.dirt)
+            if (side != 0 && world.getBlock(x, y + 1, z).isAir(world, x, y + 1, z) && (block == Blocks.grass || block == Blocks.dirt))
             {
-                return false;
-            }
-            else
-            {
-                Block block = Blocks.farmland;
-                world.playSoundEffect((double) ((float) x + 0.5F), (double) ((float) y + 0.5F), (double) ((float) z + 0.5F), block.stepSound.soundName, (block.stepSound.getVolume() + 1.0F) / 2.0F,
-                        block.stepSound.getPitch() * 0.8F);
+                Block block1 = Blocks.farmland;
+                world.playSoundEffect((double) ((float) x + 0.5F), (double) ((float) y + 0.5F), (double) ((float) z + 0.5F), block1.stepSound.getStepResourcePath(), (block1.stepSound.getVolume() + 1.0F) / 2.0F, block1.stepSound.getPitch() * 0.8F);
 
                 if (world.isRemote)
                 {
@@ -515,10 +538,14 @@ public class AbilityHelper
                 }
                 else
                 {
-                    world.setBlock(x, y, z, block);
-                    onBlockChanged(stack, world, Blocks.air, x, y, z, player, random);
+                    world.setBlock(x, y, z, block1);
+                    damageTool(stack, 1, player, false);
                     return true;
                 }
+            }
+            else
+            {
+                return false;
             }
         }
     }
@@ -621,7 +648,7 @@ public class AbilityHelper
         if (!world.isRemote && player instanceof EntityPlayer)
             d1 += 1.62D;
         double d2 = player.prevPosZ + (player.posZ - player.prevPosZ) * (double) f;
-        Vec3 vec3 = world.getWorldVec3Pool().getVecFromPool(d0, d1, d2);
+        Vec3 vec3 = Vec3.createVectorHelper(d0, d1, d2);
         float f3 = MathHelper.cos(-f2 * 0.017453292F - (float) Math.PI);
         float f4 = MathHelper.sin(-f2 * 0.017453292F - (float) Math.PI);
         float f5 = -MathHelper.cos(-f1 * 0.017453292F);
@@ -637,4 +664,45 @@ public class AbilityHelper
         return world.func_147447_a(vec3, vec31, par3, !par3, par3);
     }
 
+    public static float calcToolSpeed (ToolCore tool, NBTTagCompound tags)
+    {
+        float mineSpeed = tags.getInteger("MiningSpeed");
+        int heads = 1;
+        if (tags.hasKey("MiningSpeed2"))
+        {
+            mineSpeed += tags.getInteger("MiningSpeed2");
+            heads++;
+        }
+
+        if (tags.hasKey("MiningSpeedHandle"))
+        {
+            mineSpeed += tags.getInteger("MiningSpeedHandle");
+            heads++;
+        }
+
+        if (tags.hasKey("MiningSpeedExtra"))
+        {
+            mineSpeed += tags.getInteger("MiningSpeedExtra");
+            heads++;
+        }
+        float speedMod = 1f;
+        if (tool instanceof HarvestTool)
+            speedMod = ((HarvestTool) tool).breakSpeedModifier();
+
+        float trueSpeed = mineSpeed / (heads * 100f) * speedMod;
+        trueSpeed += calcStoneboundBonus(tool, tags);
+
+        return trueSpeed;
+    }
+
+    public static float calcStoneboundBonus (ToolCore tool, NBTTagCompound tags)
+    {
+        int durability = tags.getInteger("Damage");
+        float stonebound = tags.getFloat("Shoddy");
+        float stoneboundMod = 72f;
+        if (tool instanceof HarvestTool)
+            stoneboundMod = ((HarvestTool) tool).stoneboundModifier();
+
+        return (float) Math.log(durability / stoneboundMod + 1) * 2 * stonebound;
+    }
 }
